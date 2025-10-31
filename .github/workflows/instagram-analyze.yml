@@ -1,4 +1,4 @@
-name: Analyze Instagram Profile
+name: Analyze Instagram Profile (Container)
 
 on:
   workflow_dispatch:
@@ -14,24 +14,29 @@ on:
 
 jobs:
   analyze:
+    # Use the official Playwright image that already has ALL deps & browsers
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright/python:v1.47.0-jammy
+      # ^ If an image tag ever 404s, bump to the latest tag from https://mcr.microsoft.com/en-us/product/playwright/python/tags
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install Python deps
+      - name: Show tree (sanity check)
         run: |
-          python -m pip install --upgrade pip
-          pip install playwright pandas numpy beautifulsoup4 lxml
+          echo "PWD: $(pwd)"
+          ls -R
 
-      # This action installs all necessary OS packages AND browsers for Playwright
-      - name: Install Playwright (deps + browsers)
-        uses: microsoft/playwright-github-action@v1
+      - name: Python info
+        run: |
+          python --version
+          pip --version
+
+      - name: Install Python libs (lightweight; Playwright already present)
+        run: |
+          pip install --no-cache-dir pandas beautifulsoup4 lxml
 
       - name: Run analysis
         env:
