@@ -5,7 +5,7 @@ on:
     inputs:
       profile_url:
         description: 'Public Instagram profile URL'
-        required: true
+        required: false
         default: 'https://www.instagram.com/bwhockey18/'
       limit_posts:
         description: 'How many recent posts to sample'
@@ -14,37 +14,36 @@ on:
 
 jobs:
   analyze:
-    # Use the official Playwright image that already has ALL deps & browsers
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright/python:v1.47.0-jammy
-      # ^ If an image tag ever 404s, bump to the latest tag from https://mcr.microsoft.com/en-us/product/playwright/python/tags
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Show tree (sanity check)
+      - name: Show repo tree (debug)
         run: |
-          echo "PWD: $(pwd)"
+          echo "== pwd ==" && pwd
+          echo "== ls -R =="
           ls -R
 
-      - name: Python info
+      - name: Install Python libs + Playwright
         run: |
-          python --version
-          pip --version
-
-      - name: Install Python libs (lightweight; Playwright already present)
-        run: |
-          pip install --no-cache-dir pandas beautifulsoup4 lxml
+          pip install --no-cache-dir playwright==1.47.0 pandas beautifulsoup4 lxml
+          python -m playwright install chromium
 
       - name: Run analysis
         env:
           PROFILE_URL: ${{ github.event.inputs.profile_url }}
           LIMIT_POSTS: ${{ github.event.inputs.limit_posts }}
         run: |
+          set -e
+          URL="${PROFILE_URL:-https://www.instagram.com/bwhockey18/}"
+          LIMIT="${LIMIT_POSTS:-12}"
+          echo "Running IG scrape for: $URL"
           mkdir -p reports
-          python scripts/ig_analyze.py "${PROFILE_URL}" "${LIMIT_POSTS}"
+          python scripts/ig_analyze.py "$URL" "$LIMIT"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
